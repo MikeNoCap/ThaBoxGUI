@@ -8,7 +8,7 @@ app = socketio.WSGIApp(sio)
 
 
 @sio.event
-def connect():
+def connect(sid):
     print("I'm connected!")
 
 @sio.event
@@ -16,6 +16,6 @@ def connect_error(data):
     print("The connection failed!")
 
 @sio.event
-def disconnect():
+def disconnect(sid):
     print("I'm disconnected!")
     
