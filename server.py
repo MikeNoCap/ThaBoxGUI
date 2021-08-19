@@ -3,7 +3,7 @@ import socketio
 from aiohttp import web
 from fastapi import FastAPI
 # Configure server app
-sio = socketio.Server()
+sio = socketio.Server(async_mode='eventlet')
 app = socketio.WSGIApp(sio)
 
 
