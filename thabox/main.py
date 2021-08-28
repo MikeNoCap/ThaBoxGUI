@@ -171,7 +171,7 @@ def join_create():
     global socket_thread
     username = username_entry.get()
     room_name = room_entry.get()
-    if username == "":
+    if username == "": 
         return set_error_text("Please enter a\nusername first")
     if len(username) < 3 or len(username) > 16:
         username_entry.delete(0, tk.END)
