@@ -1,15 +1,20 @@
+import threading
 from client import SERVER_ADDRESS
 import socketio
 import tkinter as tk
 from PIL import Image, ImageTk
-
+import asyncio
 
 messages = ["\n" for i in range(10)]
 
-sio = socketio.Client()
-SERVER_ADDRESS = "http://0.0.0.0:8000"
-sio.connect(SERVER_ADDRESS)
 
+
+sio = socketio.AsyncClient()
+SERVER_ADDRESS = "http://localhost:8000"
+
+CONNECTED = False
+USERNAME = ""
+ROOM = ""
 
 root = tk.Tk()
 
@@ -39,7 +44,8 @@ def box_chat(username, room_name):
         
     
 
-def on_closing():
+async def on_closing():
+    await sio.disconnect()
     root.destroy()
 
 logo = tk.Label(image=tkimage, borderwidth=0)
@@ -60,7 +66,69 @@ error_message = tk.Label(root, text="\n", background="black", font="Courier 25")
 error_message.configure(foreground="red")
 
 
-def set_error_text(text):
+@sio.event
+async def receive_message(data):
+    global ROOM, messages, USERNAME
+    if data["room_name"] == ROOM:
+        prev_messages = messages.cget("text")
+        messages.configure(text=f"{prev_messages}{data['username']}: {data['message']}\n")
+
+
+async def send_message(username, room_name, message):
+    await sio.emit("send_message", data={"username": username, "room_name": room_name, "message": message})
+
+
+async def chat_room(username, room_name):
+    global messages, message_entry
+    globals().update(USERNAME=username)
+    globals().update(ROOM=room_name)
+
+    logo.destroy()
+    input_frame.destroy()
+    join_button.destroy()
+    error_message.destroy()
+
+    message_input = tk.Frame(root, background="black")
+    message_entry = tk.Entry(message_input)
+    loop = asyncio.new_event_loop()
+    message_send_button = tk.Button(message_input, text="Send", command=lambda: loop.run_until_complete(send_message(username, room_name, message_entry.get())))
+
+    messages = tk.Label(root, text="", background="black", foreground="cyan", font="Haettenschweiler 16")
+    
+    messages.grid(row=0)
+
+    message_entry.grid(row=0, column=0)
+    message_send_button.grid(row=0, column=1)
+    message_input.grid(row=1, column=0)
+
+    while True:
+        await asyncio.sleep(0.3)
+
+
+async def connect_server(username, room_name):
+    set_error_text("Connecting to server\n", "white")
+    connected = False
+    while not connected:
+        try:
+            await sio.connect(SERVER_ADDRESS)
+            globals().update(CONNECTED=True)
+            set_error_text("Connected!\n", "green")
+            connected = True
+        except socketio.exceptions.ConnectionError:
+            set_error_text("Failed to \nconnect to server")
+            await asyncio.sleep(4)
+            set_error_text("Retrying\n", "yellow")
+    await asyncio.sleep(2)
+
+    set_error_text("Joining room\n", "white")
+    await sio.emit("join_room", {"room_name": room_name})
+    await asyncio.sleep(1)
+    set_error_text("Joined room!\n", "green")
+    await chat_room(username, room_name)
+
+
+def set_error_text(text, color="red"):
+    error_message.configure(foreground=color)
     return error_message.config(text=text)
 
 
@@ -74,12 +142,7 @@ def join_create():
     if len(room_name) == 0:
         return set_error_text("Room name can't\nbe empty")
     
-    try:
-
-        
-        return box_chat(username, room_name)
-    except socketio.exceptions.ConnectionError as e:
-        return set_error_text("Could not connect\nto server")
+    threading.Thread(target=lambda: asyncio.run(connect_server(username, room_name))).start()
 
 join_button = tk.Button(root, text="Join/Create box", padx=70, pady=14, font="Haettenschweiler 21", background="#b40000", command=join_create)
 
@@ -98,14 +161,18 @@ input_frame.grid(row=1, column=0)
 error_message.grid(row=3, column=0)
 
 
-@sio.event
-def message(data):
-    print('I received a message!')
 
-root.protocol("WM_DELETE_WINDOW", on_closing)
+loop = asyncio.get_event_loop()
+root.protocol("WM_DELETE_WINDOW",lambda: loop.run_until_complete(on_closing()))
+
 root.columnconfigure(0, weight=1)
 root.rowconfigure(0, weight=1)
 root.configure(background='black')
 root.configure(highlightthickness=0)
 root.attributes('-topmost', True)
-root.mainloop()
+
+
+
+
+
+root.mainloop() # THREADING WILL SOLVE ALL OF MY PROBLEMS:
