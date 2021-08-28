@@ -1,0 +1,9 @@
+setup.py
+thabox/__init__.py
+thabox/main.py
+thabox.egg-info/PKG-INFO
+thabox.egg-info/SOURCES.txt
+thabox.egg-info/dependency_links.txt
+thabox.egg-info/entry_points.txt
+thabox.egg-info/requires.txt
+thabox.egg-info/top_level.txt

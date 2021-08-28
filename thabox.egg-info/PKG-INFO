@@ -1,0 +1,12 @@
+Metadata-Version: 2.1
+Name: thabox
+Version: 0.1.5
+Summary: ThaBox is an open-source and retro-modern chat application where clients can connect to chatrooms and talk anonymously.
+Home-page: https://github.com/MikeNoCap/ThaBoxGUI
+Author: MikeNoCap
+Author-email: thorvaldsenmikkel@gmail.com
+License: MIT
+Project-URL: Bug Tracker, https://github.com/MikeNoCap/ThaBoxGUI/issues
+Description: Nothing here at the moment...
+Platform: UNKNOWN
+Description-Content-Type: text/markdown
