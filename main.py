@@ -9,7 +9,7 @@ messages = ["\n" for i in range(10)]
 
 
 sio = socketio.AsyncClient()
-SERVER_ADDRESS = "http://thabox.asmul.net:8000"
+SERVER_ADDRESS = ["http://localhost:8000", "http://thabox.asmul.net:8080"][1]
 
 CONNECTED = False
 USERNAME = ""
@@ -24,9 +24,6 @@ root.iconbitmap("icon.ico")
 img = Image.open("ThaBox.png")
 img = img.resize((500, 500))
 tkimage = ImageTk.PhotoImage(img)
-
-join_button_img = Image.open("button.png")
-join_button_tkimage = ImageTk.PhotoImage(join_button_img)
 
 
 
