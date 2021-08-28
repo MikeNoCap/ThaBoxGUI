@@ -1,5 +1,4 @@
 import threading
-from client import SERVER_ADDRESS
 import socketio
 import tkinter as tk
 from PIL import Image, ImageTk
@@ -10,7 +9,7 @@ messages = ["\n" for i in range(10)]
 
 
 sio = socketio.AsyncClient()
-SERVER_ADDRESS = "http://localhost:8000"
+SERVER_ADDRESS = "http://thabox.asmul.net:8000"
 
 CONNECTED = False
 USERNAME = ""
