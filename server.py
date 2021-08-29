@@ -7,13 +7,14 @@ app = socketio.ASGIApp(sio)
 
 
 @sio.event
-async def connect(sid, data):
+async def connect(sid):
     print(f"[SERVER]: connect {sid}")
 
 
 @sio.event
 async def disconnect(sid):
     print(f"[SERVER]: disconnect {sid}")
+
     
 
 @sio.event
@@ -22,14 +23,13 @@ async def join_room(sid, data):
     sio.enter_room(sid, data['room_name'])
     print(f"{sid} joined to {data['room_name']}")
     
-    
 
 
 @sio.event
 async def leave_room(sid, data):
     print(f"{data['username']} left {data['room_name']}")
     sio.leave_room(sid, data['room_name'])
-
+    
 
 @sio.event
 async def send_message(sid, data):

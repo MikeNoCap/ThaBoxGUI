@@ -10,7 +10,7 @@ socket_thread = None
 
 
 sio = socketio.AsyncClient()
-SERVER_ADDRESS = ["http://localhost:8000", "http://thabox.asmul.net:8080"][1]
+SERVER_ADDRESS = ["http://localhost:8000", "http://thabox.asmul.net:8080"][0]
 
 CONNECTED = False
 USERNAME = ""
@@ -30,24 +30,14 @@ tkimage = ImageTk.PhotoImage(img)
 
 
 
-def box_chat(username, room_name):
-    global message
-    input_frame.destroy()
-    join_button.destroy()
-    logo.destroy()
-    error_message.destroy()
-    message = tk.Label(root, text="Test")
-    message.grid(row=0, column=0)
 
 
         
-    
-
-async def on_closing():
+def on_closing():
     global EXIT
     EXIT = True
-    await asyncio.sleep(1.5)
     root.destroy()
+    
 
 logo = tk.Label(image=tkimage, borderwidth=0)
 logo.grid(row=0, column=0)
@@ -67,7 +57,7 @@ error_message = tk.Label(root, text="\n", background="black", font="Courier 25")
 error_message.configure(foreground="red")
 
 
-@sio.event # 19
+@sio.event 
 async def receive_message(data):
     global ROOM, messages, msgs, rows_used, message_boxes
     if data["room_name"] == ROOM:
@@ -75,34 +65,52 @@ async def receive_message(data):
         while rows_used > 14:
             msg_box = message_boxes.pop(0)
             text = msg_box[2].cget("text")
-            for i in msg_box:
-                i.destroy()
+            msg_box[0].destroy()
             rows_used -= len(text.splitlines())
         
         
         messages.append((data['username'], data['message']))
         
+        if data["is_server"]:
+            msg_frame = tk.Frame(msgs, background="black")
+            message = tk.Label(msg_frame, background="black", foreground="white", text=data['message'], font="Haettenschweiler 18")
+            message.grid(row=0, column=1, sticky="W", padx=5, pady=5)
+            msg_frame.grid(row=len(messages), column=0)
+            message_boxes.append((msg_frame, "SERVER", message))
+            return
+
         msg_frame = tk.Frame(msgs, background="black")
         author = tk.Label(msg_frame, background="magenta", foreground="black", text=data['username'], font="Haettenschweiler 18")
         message = tk.Label(msg_frame, background="cyan", foreground="black", text=data['message'], font="Haettenschweiler 18")
         author.grid(row=0, column=0, sticky="E", pady=5)
         message.grid(row=0, column=1, sticky="W", padx=5, pady=5)
         msg_frame.grid(row=len(messages), column=0)
-
         message_boxes.append((msg_frame, author, message))
-        
+
 
 async def send_message(username, room_name, message):
     if (message_text := message.get()) == "":
         return
-    if len(message_text) > 81:
+    if message_text.isspace():
+        message.delete(0, tk.END)
         return
-    await sio.emit("send_message", data={"username": username, "room_name": room_name, "message": "\n".join(textwrap.wrap(message_text, 27))})
+    if len(message_text) > 81:
+        message_error = tk.Label(message_input, text="Message too long!", background="red", font="Haettenschweiler 16")
+        message_error.grid(row=0, column=0, sticky="s")
+        message_input.update()
+        await asyncio.sleep(1)
+        message_error.destroy()
+        return message.delete(0, tk.END)
+    await sio.emit("send_message", data={"is_server": False, "username": username, "room_name": room_name, "message": "\n".join(textwrap.wrap(message_text, 27))})
     message.delete(0, tk.END)
 
 
+async def server_message(data):
+    await sio.emit("send_message", data=data)
+
+
 async def chat_room(username, room_name):
-    global messages, message_entry, msgs, rows_used, message_boxes
+    global messages, msgs, rows_used, message_boxes, message_input
     globals().update(USERNAME=username)
     globals().update(ROOM=room_name)
 
@@ -114,9 +122,13 @@ async def chat_room(username, room_name):
     message_boxes = []
     rows_used = 0
 
+    
+    
     message_input = tk.Frame(root, background="red")
+    
     message_entry = tk.Entry(message_input, font="Haettenschweiler 19", width=23)
     loop = asyncio.new_event_loop()
+    message_entry.bind('<Return>', lambda event: loop.run_until_complete(send_message(username, room_name, message_entry)))
     message_send_button = tk.Button(message_input, font="Haettenschweiler 20", background="red",text="Send", command=lambda: loop.run_until_complete(send_message(username, room_name, message_entry)))
 
 
@@ -126,17 +138,20 @@ async def chat_room(username, room_name):
     
 
     
-    message_entry.grid(row=0, column=0, padx=10)
-    message_send_button.grid(row=0, column=1)
+    message_entry.grid(row=1, column=0, padx=10)
+    message_send_button.grid(row=1, column=1)
     message_input.grid(row=1, column=0)
     
-    
-
+    await server_message({"is_server": True, "username": "SERVER", "room_name": room_name, "message": f"{username} joined the box"})
     while True:
         global EXIT 
         if EXIT:
+            await server_message({"is_server": True, "username": "SERVER", "room_name": room_name, "message": f"{username} left the box"})
+            await asyncio.sleep(2)
             await sio.disconnect()
+            await sio.wait()
             return
+            
         await asyncio.sleep(0.3)
 
 
@@ -179,7 +194,7 @@ def join_create():
     if len(room_name) == 0:
         return set_error_text("Room name can't\nbe empty")
     
-    socket_thread = threading.Thread(target=lambda: asyncio.run(connect_server(username, room_name)))
+    socket_thread = threading.Thread(target=lambda: asyncio.run(connect_server(username, room_name)), daemon=True)
     socket_thread.start()
 
 join_button = tk.Button(root, text="Join/Create box", padx=70, pady=14, font="Haettenschweiler 21", background="#b40000", command=join_create)
@@ -200,8 +215,8 @@ error_message.grid(row=3, column=0)
 
 
 
-loop = asyncio.get_event_loop()
-root.protocol("WM_DELETE_WINDOW",lambda: loop.run_until_complete(on_closing()))
+
+root.protocol("WM_DELETE_WINDOW",on_closing)
 
 root.columnconfigure(0, weight=1)
 root.rowconfigure(0, weight=1)
