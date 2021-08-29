@@ -7,7 +7,7 @@ app = socketio.ASGIApp(sio)
 
 
 @sio.event
-async def connect(sid):
+async def connect(sid, data):
     print(f"[SERVER]: connect {sid}")
 
 

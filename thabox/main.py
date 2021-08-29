@@ -10,7 +10,7 @@ socket_thread = None
 
 
 sio = socketio.AsyncClient()
-SERVER_ADDRESS = ["http://localhost:8000", "http://thabox.asmul.net:8080"][0]
+SERVER_ADDRESS = ["http://localhost:8000", "http://thabox.asmul.net:8080"][1]
 
 CONNECTED = False
 USERNAME = ""
@@ -98,7 +98,7 @@ async def send_message(username, room_name, message):
         message_error = tk.Label(message_input, text="Message too long!", background="red", font="Haettenschweiler 16")
         message_error.grid(row=0, column=0, sticky="s")
         message_input.update()
-        await asyncio.sleep(1)
+        await asyncio.sleep(3)
         message_error.destroy()
         return message.delete(0, tk.END)
     await sio.emit("send_message", data={"is_server": False, "username": username, "room_name": room_name, "message": "\n".join(textwrap.wrap(message_text, 27))})
