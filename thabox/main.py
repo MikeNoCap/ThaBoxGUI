@@ -3,11 +3,18 @@ import socketio
 import tkinter as tk
 from PIL import Image, ImageTk
 import asyncio
+import aiohttp
 import textwrap
+import os  
+import sys
 
 messages = []
 socket_thread = None
 
+def resource_path(relative_path):
+        if hasattr(sys, '_MEIPASS'):
+            return os.path.join(sys._MEIPASS, relative_path)
+        return os.path.join(os.path.abspath("."), relative_path)
 
 sio = socketio.AsyncClient()
 SERVER_ADDRESS = ["http://localhost:8000", "http://thabox.asmul.net:8080"][1]
@@ -21,10 +28,10 @@ EXIT = False
 root = tk.Tk()
 root.geometry("500x692")
 root.title("ThaBox")
-root.iconbitmap("thabox\icon.ico")
+root.iconbitmap(resource_path("icon.ico"))
 
 
-img = Image.open("thabox\ThaBox.png")
+img = Image.open(resource_path("ThaBox.png"))
 img = img.resize((500, 500))
 tkimage = ImageTk.PhotoImage(img)
 
