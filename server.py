@@ -38,4 +38,4 @@ async def send_message(sid, data):
     await sio.emit("receive_message", data, room=data["room_name"])
 
 if __name__ == '__main__':
-    web.run_app(app)
+    web.run_app(app, port=8080)
