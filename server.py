@@ -2,7 +2,7 @@
 import socketio
 from aiohttp import web
 
-sio = socketio.AsyncServer(async_mode="asgi", ping_interval=30, ping_timeout=4294967)
+sio = socketio.AsyncServer(async_mode="aiohttp", ping_interval=30, ping_timeout=4294967)
 app = web.Application()
 sio.attach(app)
 
