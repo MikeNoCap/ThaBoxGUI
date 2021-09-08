@@ -1,9 +1,10 @@
 # Server
 import socketio
-
+from aiohttp import web
 
 sio = socketio.AsyncServer(async_mode="asgi", ping_interval=30, ping_timeout=4294967)
-app = socketio.ASGIApp(sio)
+app = web.Application()
+sio.attach(app)
 
 
 @sio.event
@@ -35,3 +36,6 @@ async def leave_room(sid, data):
 async def send_message(sid, data):
     print(f"[SERVER]: send message {sid}, data: {data}")
     await sio.emit("receive_message", data, room=data["room_name"])
+
+if __name__ == '__main__':
+    web.run_app(app)
